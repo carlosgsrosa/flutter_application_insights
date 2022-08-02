@@ -109,8 +109,17 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
     // Track trace from the BottomNavigationBar
     appInsightsImp?.trackTrace(message: trackEventTrace);
 
-    setState(() => _selectedIndex = index);
-    setState(() => _selectedLabel = label);
+    setState(() {
+      _selectedIndex = index;
+      _selectedLabel = label;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Track http when init application
+    appInsightsImp?.trackTraceHttp('https://api.github.com/users/carlosgsrosa');
   }
 
   @override

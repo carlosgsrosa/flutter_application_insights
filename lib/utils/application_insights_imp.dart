@@ -3,12 +3,20 @@ import 'package:http/http.dart' show Client;
 
 import 'all.dart';
 
+enum TrackType {
+  trackError,
+  trackEvent,
+  trackPageView,
+  trackTrace,
+  trackTraceHttp
+}
+
 class ApplicationInsightsImp extends ApplicationInsights {
   String key;
 
   ApplicationInsightsImp(this.key);
 
-  Future<void> track(String type,
+  Future<void> track(TrackType type,
       {bool? isFatal,
       Object? error,
       StackTrace? stackTrace,
@@ -39,28 +47,26 @@ class ApplicationInsightsImp extends ApplicationInsights {
       ..properties['environment'] = 'DEV';
 
     switch (type) {
-      case "trackError":
+      case TrackType.trackError:
         telemetryClient.trackError(
             severity: severity, error: error!, stackTrace: stackTrace);
         break;
-      case "trackEvent":
+      case TrackType.trackEvent:
         telemetryClient.trackEvent(name: name!);
         break;
-      case "trackPageView":
+      case TrackType.trackPageView:
         telemetryClient.trackPageView(name: name!);
         break;
-      case "trackTrace":
+      case TrackType.trackTrace:
         telemetryClient.trackTrace(severity: severity, message: message!);
         break;
-      case "trackTraceHttp":
+      case TrackType.trackTraceHttp:
         final telemetryHttpClient = TelemetryHttpClient(
           telemetryClient: telemetryClient,
           inner: httpClient,
         );
-
         await telemetryHttpClient.get(Uri.parse(url!), headers: headers);
         await telemetryClient.flush();
-
         break;
       default:
     }
@@ -72,7 +78,7 @@ class ApplicationInsightsImp extends ApplicationInsights {
       required Object error,
       StackTrace? stackTrace}) async {
     print("sending trackError ...");
-    await track("trackError",
+    await track(TrackType.trackError,
         severity: isFatal ? Severity.critical : Severity.error,
         error: error,
         stackTrace: stackTrace);
@@ -82,7 +88,7 @@ class ApplicationInsightsImp extends ApplicationInsights {
   Future<void> trackEvent({required String name}) async {
     print("sending trackEvent ...");
     await track(
-      "trackEvent",
+      TrackType.trackEvent,
       name: name,
     );
   }
@@ -91,7 +97,7 @@ class ApplicationInsightsImp extends ApplicationInsights {
   Future<void> trackPageView({required String name}) async {
     print("sending trackPageView ...");
     await track(
-      "trackPageView",
+      TrackType.trackPageView,
       name: name,
     );
   }
@@ -100,7 +106,7 @@ class ApplicationInsightsImp extends ApplicationInsights {
   Future<void> trackTrace({required String message}) async {
     print("sending trackTrace ...");
     await track(
-      "trackTrace",
+      TrackType.trackTrace,
       severity: Severity.information,
       message: message,
     );
@@ -110,6 +116,6 @@ class ApplicationInsightsImp extends ApplicationInsights {
   Future<void> trackTraceHttp(String url,
       {Map<String, String>? headers}) async {
     print("sending trackTraceHttp ...");
-    await track("trackTraceHttp", url: url, headers: headers);
+    await track(TrackType.trackTraceHttp, url: url, headers: headers);
   }
 }
