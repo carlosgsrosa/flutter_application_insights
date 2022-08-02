@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -10,31 +11,35 @@ import 'utils/all.dart';
 ApplicationInsightsImp? appInsightsImp;
 Future<void> main() async {
   await dotenv.load();
-
   final key = dotenv.env[appInsightsKey];
+
   appInsightsImp = ApplicationInsightsImp(key!);
 
-  runZonedGuarded<Future<void>>(
-    () async {
-      WidgetsFlutterBinding.ensureInitialized();
-      runApp(const MyApp());
-    },
-    (Object error, StackTrace stackTrace) async {
-      appInsightsImp?.trackError(
-        isFatal: true,
-        error: error,
-        stackTrace: stackTrace,
-      );
-    },
-  );
+  WidgetsFlutterBinding.ensureInitialized();
 
-  FlutterError.onError = (FlutterErrorDetails errorDetails) {
-    appInsightsImp?.trackError(
+  if (kReleaseMode) {
+    runWithCrashReporting(codeToExecute: run);
+  } else {
+    run();
+  }
+}
+
+void run() => runApp(const MyApp());
+
+Future<void> runWithCrashReporting({
+  required VoidCallback codeToExecute,
+}) async {
+  FlutterError.onError = (error) => appInsightsImp?.trackError(
+      isFatal: true, error: error.exception, stackTrace: error.stack);
+
+  runZonedGuarded(
+    codeToExecute,
+    (error, stackTrace) => appInsightsImp?.trackError(
       isFatal: true,
-      error: errorDetails.exception,
-      stackTrace: errorDetails.stack!,
-    );
-  };
+      error: error,
+      stackTrace: stackTrace,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -139,7 +144,7 @@ class _MyStatefulWidgetState extends State<MyStatefulWidget> {
             ),
             ElevatedButton(
               onPressed: () {
-                throw Exception("Exception error ${DateTime.now()}");
+                throw Exception("Error ${DateTime.now()} $_selectedLabel");
               },
               child: const Text('Throw error'),
             )
